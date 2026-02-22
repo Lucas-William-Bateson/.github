@@ -1,6 +1,6 @@
 # Home Server Infrastructure Documentation
 
-> **Last Updated:** January 27, 2026  
+> **Last Updated:** February 2026  
 > **Owner:** Lucas William Bateson  
 > **Base Domain:** `l3s.me`
 
@@ -23,7 +23,7 @@
 
 ## 🌐 Network Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              INTERNET                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -35,8 +35,6 @@
 │                                                                              │
 │  Domains:                                                                    │
 │  • foundry.l3s.me      → localhost:8081                                     │
-│  • auth.l3s.me         → localhost:8080                                     │
-│  • gate.l3s.me         → localhost:4180                                     │
 │  • n8n.l3s.me          → localhost:5678                                     │
 │  • status.l3s.me       → localhost:3001                                     │
 │  • notes.l3s.me        → localhost:80                                       │
@@ -54,19 +52,14 @@
 │  │                      DOCKER CONTAINERS                               │   │
 │  │                                                                      │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
-│  │  │   Foundry    │  │   Keycloak   │  │ Auth Gateway │              │   │
-│  │  │   :8081      │  │    :8080     │  │    :4180     │              │   │
+│  │  │   Foundry    │  │     n8n      │  │ Uptime Kuma  │              │   │
+│  │  │   :8081      │  │    :5678     │  │    :3001     │              │   │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
 │  │                                                                      │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
-│  │  │     n8n      │  │ Uptime Kuma  │  │  Portfolio   │              │   │
-│  │  │    :5678     │  │    :3001     │  │    :3000     │              │   │
+│  │  │  Portfolio   │  │     Blog     │  │   Registry   │              │   │
+│  │  │    :3000     │  │     :80      │  │    :5001     │              │   │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
-│  │                                                                      │   │
-│  │  ┌──────────────┐  ┌──────────────┐                                │   │
-│  │  │     Blog     │  │   Registry   │                                │   │
-│  │  │     :80      │  │    :5001     │                                │   │
-│  │  └──────────────┘  └──────────────┘                                │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -75,7 +68,9 @@
 
 ## 🔐 Authentication Architecture
 
-```
+Authentication is handled on a per-app basis using **WorkOS**, replacing the legacy centralized Keycloak and OAuth2-Proxy gateway setup.
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         AUTHENTICATION FLOW                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -83,28 +78,32 @@
   User Request
        │
        ▼
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Cloudflare │────▶│ Auth Gateway │────▶│   Keycloak   │
-│    Tunnel    │     │ (OAuth2Proxy)│     │    (OIDC)    │
-│              │     │  gate.l3s.me │     │ auth.l3s.me  │
-└──────────────┘     └──────────────┘     └──────────────┘
-                            │
-                            │ Authenticated
-                            ▼
-                     ┌──────────────┐
-                     │  Protected   │
-                     │   Services   │
-                     │ (n8n, etc.)  │
-                     └──────────────┘
+┌──────────────┐     ┌─────────────────────────────────────────────────┐
+│   Cloudflare │────▶│             Protected Service                   │
+│    Tunnel    │     │          (e.g., Foundry, n8n)                   │
+└──────────────┘     │                                                 │
+                     │  ┌──────────────┐       ┌─────────────────┐     │
+                     │  │   App Auth   │──────▶│ WorkOS Identity │     │
+                     │  │ (Middleware) │       │   Provider      │     │
+                     │  └──────────────┘       └─────────────────┘     │
+                     └─────────────────────────────────────────────────┘
 ```
 
 ### Authentication Components
 
-| Component | Purpose | Configuration |
-|-----------|---------|---------------|
-| **Keycloak** | Identity Provider (OIDC) | Realm: `personal-org` |
-| **OAuth2-Proxy** | Authentication gateway | Client: `auth-gateway` |
-| **Cookie Domain** | SSO across subdomains | `.l3s.me` |
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| **WorkOS** | Identity Provider / SSO | Replaced Keycloak for all per-app authentication needs. |
+| **Session Cookies** | Session Management | Secure, HTTP-only HS256 JWT cookies verified by the app. |
+
+---
+
+## 🔑 Secrets Management
+
+Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`) and local environment templates, ensuring sensitive credentials are never hardcoded.
+
+- **Host-side Injection**: Services like Foundry use a launchd watcher and `pass-cli` to inject credentials from Proton Pass dynamically.
+- **Environment Templates**: Repositories (such as `blog`, `n8n`, and `portfolio`) utilize `secrets.env` configurations and templates for robust secret provisioning.
 
 ---
 
@@ -133,6 +132,8 @@
 - Docker compose deployments
 - Scheduled builds (cron)
 - Real-time build logs
+- **Auth**: WorkOS integration with HS256 session cookies
+- **Secrets**: Proton Pass host-side secret injection via watcher
 
 **Connections:**
 - GitHub App (webhook + clone authentication)
@@ -141,63 +142,7 @@
 
 ---
 
-### 2. Keycloak (Identity Server)
-
-| Property | Value |
-|----------|-------|
-| **Domain** | `auth.l3s.me` |
-| **Port** | 8080 |
-| **Repository** | `Lucas-William-Bateson/identity-keycloak` |
-| **Image** | Custom (based on Keycloak official) |
-| **Database** | PostgreSQL 16 (keycloak-db) |
-
-**Configuration:**
-- Realm: `personal-org`
-- Admin Console: `https://auth.l3s.me/admin`
-- Proxy Headers: `xforwarded`
-- Strict Hostname: Disabled
-
-**Clients Configured:**
-- `auth-gateway` - OAuth2-Proxy client for SSO
-
-**Connections:**
-- Auth Gateway (OIDC provider)
-- Protected applications (token validation)
-
----
-
-### 3. Auth Gateway (OAuth2-Proxy)
-
-| Property | Value |
-|----------|-------|
-| **Domain** | `gate.l3s.me` |
-| **Port** | 4180 |
-| **Repository** | `Lucas-William-Bateson/auth-gateway` |
-| **Image** | Custom (OAuth2-Proxy based) |
-| **Env File** | `/Users/lucas/foundry/auth-gateway.env` |
-
-**Configuration:**
-```
-Provider: OIDC
-Issuer: https://auth.l3s.me/realms/personal-org
-Cookie Domain: .l3s.me
-Redirect URL: https://gate.l3s.me/oauth2/callback
-Upstream: static://202
-```
-
-**Features:**
-- SSO across all `.l3s.me` subdomains
-- X-Auth headers injection
-- Access token passthrough
-- Skip auth for health endpoints
-
-**Connections:**
-- Keycloak (authentication)
-- Protected services (via nginx auth_request)
-
----
-
-### 4. n8n (Workflow Automation)
+### 2. n8n (Workflow Automation)
 
 | Property | Value |
 |----------|-------|
@@ -211,17 +156,13 @@ Upstream: static://202
 - Webhook URL: `https://n8n.l3s.me/`
 - Runners Enabled: Yes
 - Resource Limits: 1 CPU, 1GB Memory
+- Secrets: Managed via `secrets.env` configuration
 
 **Scheduled Rebuild:** Daily at 02:00 UTC
 
-**Use Cases:**
-- Automation workflows
-- Webhook integrations
-- Data processing pipelines
-
 ---
 
-### 5. Uptime Kuma (Status Monitoring)
+### 3. Uptime Kuma (Status Monitoring)
 
 | Property | Value |
 |----------|-------|
@@ -233,16 +174,9 @@ Upstream: static://202
 
 **Scheduled Rebuild:** Weekly on Monday at 01:00 UTC
 
-**Functionality:**
-- HTTP(S) endpoint monitoring
-- TCP port monitoring
-- DNS monitoring
-- Status page generation
-- Alert notifications
-
 ---
 
-### 6. Portfolio Website
+### 4. Portfolio Website
 
 | Property | Value |
 |----------|-------|
@@ -253,15 +187,11 @@ Upstream: static://202
 | **Framework** | Astro |
 
 **Scheduled Rebuild:** Daily at 05:00 UTC
-
-**Features:**
-- Personal portfolio/CV
-- Static site generation
-- Multiple domain support
+**Secrets:** Managed via `secrets.env` configuration
 
 ---
 
-### 7. Blog / Notes
+### 5. Blog / Notes
 
 | Property | Value |
 |----------|-------|
@@ -272,25 +202,17 @@ Upstream: static://202
 | **Framework** | Astro |
 
 **Scheduled Rebuild:** Daily at 03:00 UTC
-
-**Features:**
-- Personal blog/notes
-- Content collection
-- RSS feed
+**Secrets:** Managed via `secrets.env` configuration
 
 ---
 
-### 8. Docker Registry
+### 6. Docker Registry
 
 | Property | Value |
 |----------|-------|
 | **Port** | 5001 (internal) |
 | **Image** | `registry:2` |
 | **Data Volume** | `registry-data` |
-
-**Functionality:**
-- Local container image storage
-- Push/pull for custom images
 
 ---
 
@@ -299,9 +221,8 @@ Upstream: static://202
 | Database | Service | Port | Volume |
 |----------|---------|------|--------|
 | `foundry` | Foundry Server | 5432 | `foundry_postgres_data` |
-| `keycloak` | Keycloak | 5432 | `keycloak-db` |
 
-Both databases run PostgreSQL 16 Alpine.
+Database runs PostgreSQL 16 Alpine.
 
 ---
 
@@ -311,7 +232,7 @@ Both databases run PostgreSQL 16 Alpine.
 
 All services are deployed automatically via Foundry when pushing to their respective repositories:
 
-```
+```text
 GitHub Push → Webhook → Foundry Server → Agent Claims Job → Docker Build → Deploy
 ```
 
@@ -326,13 +247,7 @@ Each repository contains a `foundry.toml` that defines:
 
 ### Env Files Location
 
-Sensitive environment variables are stored on the host at `/Users/lucas/foundry/`:
-
-| File | Service |
-|------|---------|
-| `secrets.env` | Foundry (GitHub App secrets, tunnel token) |
-| `auth-gateway.env` | OAuth2-Proxy (client secret, cookie secret) |
-| `identity-keycloak.env` | Keycloak (if needed) |
+Sensitive environment variables are securely stored or dynamically injected using templates, `secrets.env`, and `pass-cli`. Host-side configurations typically reside in `/Users/lucas/foundry/`.
 
 ---
 
@@ -345,8 +260,6 @@ Sensitive environment variables are stored on the host at `/Users/lucas/foundry/
 | `l3s.me` | Portfolio | 3000 |
 | `portfolio.l3s.me` | Portfolio | 3000 |
 | `foundry.l3s.me` | Foundry | 8081 |
-| `auth.l3s.me` | Keycloak | 8080 |
-| `gate.l3s.me` | Auth Gateway | 4180 |
 | `n8n.l3s.me` | n8n | 5678 |
 | `status.l3s.me` | Uptime Kuma | 3001 |
 | `notes.l3s.me` | Blog | 80 |
@@ -367,8 +280,6 @@ All domains route through the Cloudflare Tunnel to the Mac Mini.
 | Network | Purpose | Services |
 |---------|---------|----------|
 | `foundry_default` | Foundry stack | foundryd, agent, postgres, cloudflared |
-| `keycloak-net` | Identity stack | keycloak, postgres-keycloak |
-| `auth-net` | Auth gateway | oauth2-proxy |
 | `n8n-network` | Workflow automation | n8n |
 
 ---
@@ -413,7 +324,6 @@ docker exec foundry-postgres-1 psql -U foundry -d foundry -c "SELECT id, status,
 | Data | Location |
 |------|----------|
 | Foundry DB | `foundry_postgres_data` volume |
-| Keycloak DB | `keycloak-db` volume |
 | n8n Workflows | `n8n_data` volume |
 | Uptime Kuma | `uptime-kuma` volume |
 | Docker Registry | `registry-data` volume |

@@ -15,8 +15,11 @@ This organization serves as a centralized home for all my personal projects and 
 ### 🏗️ Infrastructure
 
 - **[foundry](https://github.com/Lucas-William-Bateson/foundry)** - Custom CI/CD platform built in Rust
-- **[identity-keycloak](https://github.com/Lucas-William-Bateson/identity-keycloak)** - Keycloak identity server configuration
-- **[auth-gateway](https://github.com/Lucas-William-Bateson/auth-gateway)** - OAuth2-Proxy for SSO across services
+
+### 🗄️ Decommissioned (Legacy)
+
+- **[identity-keycloak](https://github.com/Lucas-William-Bateson/identity-keycloak)** - Keycloak identity server configuration (replaced by WorkOS)
+- **[auth-gateway](https://github.com/Lucas-William-Bateson/auth-gateway)** - OAuth2-Proxy for SSO across services (replaced by per-app auth)
 
 ### 🌐 Websites
 
