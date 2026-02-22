@@ -30,6 +30,7 @@ This organization serves as a centralized home for all my personal projects and 
 
 - **[n8n](https://github.com/Lucas-William-Bateson/n8n)** - Workflow automation deployment
 - **[uptime-kuma](https://github.com/Lucas-William-Bateson/uptime-kuma)** - Status monitoring at [status.l3s.me](https://status.l3s.me)
+- **[budget](https://github.com/Lucas-William-Bateson/budget)** - Personal budgeting tool (long term, monthly, weekly) using [Designsystemet](https://designsystemet.no/no/components) at [budget.l3s.me](https://budget.l3s.me)
 
 ## Infrastructure Documentation
 

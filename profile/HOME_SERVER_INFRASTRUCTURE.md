@@ -41,6 +41,7 @@
 │  • l3s.me              → localhost:3000                                     │
 │  • portfolio.l3s.me    → localhost:3000                                     │
 │  • lucasbateson.com    → localhost:3000                                     │
+│  • budget.l3s.me       → localhost:3002                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -60,6 +61,11 @@
 │  │  │  Portfolio   │  │     Blog     │  │   Registry   │              │   │
 │  │  │    :3000     │  │     :80      │  │    :5001     │              │   │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐                                                    │   │
+│  │  │    Budget    │                                                    │   │
+│  │  │    :3002     │                                                    │   │
+│  │  └──────────────┘                                                    │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -216,6 +222,21 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 
 ---
 
+### 7. Budget
+
+| Property | Value |
+|----------|-------|
+| **Domain** | `budget.l3s.me` |
+| **Port** | 3002 |
+| **Repository** | `Lucas-William-Bateson/budget` |
+| **Image** | Custom (Next.js + Designsystemet) |
+| **Framework** | Next.js |
+
+**Description:** Created per instruction: "Create a new app (with git repo) with auth called budget, at the domain budget.l3s.me to work as a personal budgeting tool, both for long term management and month by month and week by week, use designsystemet: https://designsystemet.no/no/components".
+Auth is handled on a per-app basis via WorkOS.
+
+---
+
 ## 🗄️ Database Overview
 
 | Database | Service | Port | Volume |
@@ -263,6 +284,7 @@ Sensitive environment variables are securely stored or dynamically injected usin
 | `n8n.l3s.me` | n8n | 5678 |
 | `status.l3s.me` | Uptime Kuma | 3001 |
 | `notes.l3s.me` | Blog | 80 |
+| `budget.l3s.me` | Budget | 3002 |
 
 ### Secondary Domain: `lucasbateson.com`
 
