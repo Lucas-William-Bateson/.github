@@ -13,7 +13,7 @@ This organization serves as a centralized home for all my personal projects and 
 
 ### 🏗️ Infrastructure
 
-- **[foundry](https://github.com/Lucas-William-Bateson/foundry)** - Custom CI/CD platform built in Rust
+- **[foundry](https://github.com/Lucas-William-Bateson/foundry)** - Self-hosted CI/CD platform (Rust + React 19) with GitHub App integration, WorkOS auth, Cloudflare tunnel provisioning, and Docker compose deployments
 
 ### 🌐 Websites
 

@@ -122,23 +122,36 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 | **Domain** | `foundry.l3s.me` |
 | **Port** | 8081 |
 | **Repository** | `Lucas-William-Bateson/foundry` |
-| **Image** | Custom (Rust + React) |
+| **Image** | Custom (Rust workspace + React 19/Vite) |
 | **Database** | PostgreSQL 16 (foundry_postgres_data) |
 
-**Components:**
-- `foundryd` - Main server (API + Web UI)
-- `foundry-agent` - Build agent (claims and executes jobs)
-- `postgres` - Job and repo metadata storage
+**Components (3-crate Rust workspace):**
+- `foundry-core` - Shared types, config parsing (foundry.toml), GitHub webhook verification
+- `foundryd` - Axum HTTP server, PostgreSQL job queue, scheduler, auth, Cloudflare tunnel management
+- `foundry-agent` - Job runner that polls for work, clones repos, builds Docker images, executes jobs
+- `postgres` - Job and repo metadata storage (PostgreSQL 16, 6 migrations)
 - `cloudflared` - Cloudflare tunnel daemon
 
+**Frontend:**
+- React 19 + TypeScript + Vite + TailwindCSS 4 + Radix UI
+
+**API:**
+- REST API (Axum) with SSE for real-time log streaming
+
 **Functionality:**
-- GitHub webhook receiver
+- GitHub webhook receiver with signature verification
 - Automatic deployments on push
-- Build job queuing and execution
-- Docker compose deployments
-- Scheduled builds (cron)
-- Real-time build logs
-- **Auth**: WorkOS integration with HS256 session cookies
+- Build job queuing with atomic claiming (`FOR UPDATE SKIP LOCKED`)
+- Multi-stage build pipelines (`[[stages]]` in foundry.toml)
+- Docker compose deployments with auto Cloudflare tunnel/DNS provisioning
+- Scheduled builds (cron-based)
+- Real-time build log streaming
+- Container management UI (start/stop/restart/logs)
+- GitHub App integration (check runs)
+- Self-deployment capability (agent detects pushes to own repo)
+- Volume mount support for deployments (with dangerous path blocking)
+- Env file support for compose deployments
+- **Auth**: WorkOS SSO with HS256 session cookies
 - **Secrets**: Proton Pass host-side secret injection via watcher
 
 **Connections:**
@@ -263,8 +276,17 @@ Each repository contains a `foundry.toml` that defines:
 - Build configuration (Dockerfile, context, timeout)
 - Trigger rules (branches, pull requests)
 - Deploy settings (name, domain, port, compose file)
+- Multi-stage pipeline definitions (`[[stages]]`)
+- Volume mount mappings (with dangerous path blocking)
 - Schedule (cron expression for periodic rebuilds)
 - Environment variables
+
+### Container Management
+
+Running containers can be managed via the Foundry UI:
+- Start, stop, and restart containers
+- View real-time logs (via SSE streaming)
+- Monitor container status
 
 ### Env Files Location
 

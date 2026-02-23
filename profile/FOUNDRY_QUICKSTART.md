@@ -106,9 +106,10 @@ domains = ["yourapp.l3s.me"]
 port = 3000
 compose_file = "docker/docker-compose.yml"
 env_file = "secrets.env"
+# volumes = ["./data:/app/data"]  # Optional: Docker volume mounts
 
 [schedule]
-cron = "0 0 4 * * * *"
+cron = "0 4 * * *"
 branch = "main"
 enabled = true
 timezone = "UTC"
@@ -267,3 +268,84 @@ export default async function DashboardPage() {
   );
 }
 ```
+
+---
+
+## Advanced Configuration
+
+### Multi-Stage Pipelines
+
+Use the `[[stages]]` array in `foundry.toml` to define a CI pipeline with multiple steps. Stages can depend on each other, override the build image, and control when they run.
+
+```toml
+[[stages]]
+name = "lint"
+command = "npm run lint"
+timeout = 300
+allow_failure = false
+
+[[stages]]
+name = "test"
+command = "npm run test"
+timeout = 600
+depends_on = ["lint"]
+env = { CI = "true" }
+
+[[stages]]
+name = "e2e"
+command = "npm run test:e2e"
+image = "mcr.microsoft.com/playwright:v1.40.0-jammy"
+timeout = 900
+depends_on = ["lint"]
+condition = "on_push"
+allow_failure = true
+```
+
+**Stage fields:**
+| Field | Required | Default | Description |
+|---|---|---|---|
+| `name` | Yes | — | Stage identifier |
+| `command` | Yes | — | Shell command to run |
+| `image` | No | Build image | Override the container image for this stage |
+| `timeout` | No | `600` | Timeout in seconds |
+| `allow_failure` | No | `false` | If `true`, pipeline continues even if this stage fails |
+| `env` | No | `{}` | Stage-specific environment variables |
+| `depends_on` | No | `[]` | List of stage names that must complete first |
+| `condition` | No | `on_success` | When to run: `always`, `on_success`, `on_failure`, `on_pr`, `on_push` |
+
+### Volume Mounts
+
+The `volumes` field under `[deploy]` accepts Docker volume mount syntax for persistent data:
+
+```toml
+[deploy]
+volumes = [
+  "./data:/app/data",
+  "./uploads:/app/uploads:ro",
+]
+```
+
+> **Security:** The following host paths are blocked and will be rejected:
+> `/var/run/docker.sock`, `/etc`, `/root`, `/home`, `/proc`, `/sys`, `/dev`, `/boot`, `/var/run`
+
+### Deployment Modes
+
+Foundry supports two deployment modes:
+
+- **Docker Compose mode** (recommended): Set `compose_file` under `[deploy]` to point at your `docker-compose.yml`. This enables multi-container orchestration and the host-side `pass-cli` secrets watcher.
+- **Direct Docker mode**: Omit `compose_file` and Foundry will build and run a single container directly using the `[build]` image/dockerfile configuration.
+
+Both modes support the `domain`/`domains`, `port`, `env_file`, `healthcheck`, and `volumes` fields. You can specify a single domain with the `domain` string field, multiple domains with the `domains` array field, or both—Foundry merges them automatically.
+
+### PR Target Branches
+
+By default, Foundry builds on all pull requests when `pull_requests = true`. To restrict builds to PRs targeting specific branches, use `pr_target_branches`:
+
+```toml
+[triggers]
+branches = ["main"]
+pull_requests = true
+pr_target_branches = ["main", "staging"]
+```
+
+This is useful for monorepo setups or when you only want CI to run on PRs headed for production branches.
