@@ -6,7 +6,6 @@ Personal organization for self-hosted infrastructure, side projects, and experim
 
 This organization serves as a centralized home for all my personal projects and self-hosted services. Having a dedicated org allows me to:
 
-- **Keep work and personal projects separate** - Clean separation between professional and hobby work
 - **Manage GitHub App integrations** - My CI/CD platform (Foundry) uses a GitHub App that works at the org level
 - **Organize related repositories** - All infrastructure, websites, and tools in one place
 
