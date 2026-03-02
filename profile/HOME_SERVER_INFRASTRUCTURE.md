@@ -35,7 +35,6 @@
 │                                                                              │
 │  Domains:                                                                    │
 │  • foundry.l3s.me      → localhost:8081                                     │
-│  • n8n.l3s.me          → localhost:5678                                     │
 │  • status.l3s.me       → localhost:3001                                     │
 │  • notes.l3s.me        → localhost:80                                       │
 │  • l3s.me              → localhost:3000                                     │
@@ -53,19 +52,14 @@
 │  │                      DOCKER CONTAINERS                               │   │
 │  │                                                                      │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
-│  │  │   Foundry    │  │     n8n      │  │ Uptime Kuma  │              │   │
-│  │  │   :8081      │  │    :5678     │  │    :3001     │              │   │
+│  │  │   Foundry    │  │ Uptime Kuma  │  │  Portfolio   │              │   │
+│  │  │   :8081      │  │    :3001     │  │    :3000     │              │   │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
 │  │                                                                      │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
-│  │  │  Portfolio   │  │     Blog     │  │   Registry   │              │   │
-│  │  │    :3000     │  │     :80      │  │    :5001     │              │   │
+│  │  │     Blog     │  │    Budget    │  │   Registry   │              │   │
+│  │  │     :80      │  │    :3002     │  │    :5001     │              │   │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
-│  │                                                                      │   │
-│  │  ┌──────────────┐                                                    │   │
-│  │  │    Budget    │                                                    │   │
-│  │  │    :3002     │                                                    │   │
-│  │  └──────────────┘                                                    │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -109,7 +103,7 @@ Authentication is handled on a per-app basis using **WorkOS**, replacing the leg
 Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`) and local environment templates, ensuring sensitive credentials are never hardcoded.
 
 - **Host-side Injection**: Services like Foundry use a launchd watcher and `pass-cli` to inject credentials from Proton Pass dynamically.
-- **Environment Templates**: Repositories (such as `blog`, `n8n`, and `portfolio`) utilize `secrets.env` configurations and templates for robust secret provisioning.
+- **Environment Templates**: Repositories (such as `blog` and `portfolio`) utilize `secrets.env` configurations and templates for robust secret provisioning.
 
 ---
 
@@ -161,27 +155,7 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 
 ---
 
-### 2. n8n (Workflow Automation)
-
-| Property | Value |
-|----------|-------|
-| **Domain** | `n8n.l3s.me` |
-| **Port** | 5678 |
-| **Repository** | `Lucas-William-Bateson/n8n` |
-| **Image** | `docker.n8n.io/n8nio/n8n` |
-| **Data Volume** | `n8n_data` |
-
-**Configuration:**
-- Webhook URL: `https://n8n.l3s.me/`
-- Runners Enabled: Yes
-- Resource Limits: 1 CPU, 1GB Memory
-- Secrets: Managed via `secrets.env` configuration
-
-**Scheduled Rebuild:** Daily at 02:00 UTC
-
----
-
-### 3. Uptime Kuma (Status Monitoring)
+### 2. Uptime Kuma (Status Monitoring)
 
 | Property | Value |
 |----------|-------|
@@ -195,7 +169,7 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 
 ---
 
-### 4. Portfolio Website
+### 3. Portfolio Website
 
 | Property | Value |
 |----------|-------|
@@ -210,7 +184,7 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 
 ---
 
-### 5. Blog / Notes
+### 4. Blog / Notes
 
 | Property | Value |
 |----------|-------|
@@ -225,7 +199,7 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 
 ---
 
-### 6. Docker Registry
+### 5. Docker Registry
 
 | Property | Value |
 |----------|-------|
@@ -235,7 +209,7 @@ Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`)
 
 ---
 
-### 7. Budget
+### 6. Budget
 
 | Property | Value |
 |----------|-------|
@@ -303,7 +277,6 @@ Sensitive environment variables are securely stored or dynamically injected usin
 | `l3s.me` | Portfolio | 3000 |
 | `portfolio.l3s.me` | Portfolio | 3000 |
 | `foundry.l3s.me` | Foundry | 8081 |
-| `n8n.l3s.me` | n8n | 5678 |
 | `status.l3s.me` | Uptime Kuma | 3001 |
 | `notes.l3s.me` | Blog | 80 |
 | `budget.l3s.me` | Budget | 3002 |
@@ -324,7 +297,6 @@ All domains route through the Cloudflare Tunnel to the Mac Mini.
 | Network | Purpose | Services |
 |---------|---------|----------|
 | `foundry_default` | Foundry stack | foundryd, agent, postgres, cloudflared |
-| `n8n-network` | Workflow automation | n8n |
 
 ---
 
@@ -333,7 +305,6 @@ All domains route through the Cloudflare Tunnel to the Mac Mini.
 | Service | Schedule | Timezone | Branch |
 |---------|----------|----------|--------|
 | Blog | Daily 03:00 | UTC | main |
-| n8n | Daily 02:00 | UTC | main |
 | Portfolio | Daily 05:00 | UTC | main |
 | Uptime Kuma | Weekly Mon 01:00 | UTC | master |
 
@@ -368,7 +339,6 @@ docker exec foundry-postgres-1 psql -U foundry -d foundry -c "SELECT id, status,
 | Data | Location |
 |------|----------|
 | Foundry DB | `foundry_postgres_data` volume |
-| n8n Workflows | `n8n_data` volume |
 | Uptime Kuma | `uptime-kuma` volume |
 | Docker Registry | `registry-data` volume |
 
