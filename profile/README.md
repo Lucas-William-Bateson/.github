@@ -4,16 +4,9 @@ Personal organization for self-hosted infrastructure, side projects, and experim
 
 ## Why This Org?
 
-This organization serves as a centralized home for all my personal projects and self-hosted services. Having a dedicated org allows me to:
-
-- **Manage GitHub App integrations** - My CI/CD platform (Foundry) uses a GitHub App that works at the org level
-- **Organize related repositories** - All infrastructure, websites, and tools in one place
+This organization serves as a centralized home for all my personal projects and self-hosted services. Having a dedicated org allows me to organize related repositories—all infrastructure, websites, and tools in one place.
 
 ## What's Here?
-
-### 🏗️ Infrastructure
-
-- **[foundry](https://github.com/Lucas-William-Bateson/foundry)** - Self-hosted CI/CD platform (Rust + React 19) with GitHub App integration, WorkOS auth, Cloudflare tunnel provisioning, and Docker compose deployments
 
 ### 🌐 Websites
 
@@ -25,10 +18,8 @@ This organization serves as a centralized home for all my personal projects and 
 - **[uptime-kuma](https://github.com/Lucas-William-Bateson/uptime-kuma)** - Status monitoring at [status.l3s.me](https://status.l3s.me)
 - **[budget](https://github.com/Lucas-William-Bateson/budget)** - Personal budgeting tool (long term, monthly, weekly) using [Designsystemet](https://designsystemet.no/no/components) at [budget.l3s.me](https://budget.l3s.me)
 
-## Infrastructure Documentation
+## Infrastructure
 
-For detailed documentation on how everything is set up and connected, see the **[Home Server Infrastructure Guide](./HOME_SERVER_INFRASTRUCTURE.md)**.
+All services are deployed via **[Dokku](https://dokku.com/)** on a Mac Mini M4, running inside a Colima VM with Docker. Traffic is routed through Cloudflare Tunnels.
 
----
-
-_All services are self-hosted on a Mac Mini M4 and exposed via Cloudflare Tunnels._
+For detailed documentation, see the **[Home Server Infrastructure Guide](./HOME_SERVER_INFRASTRUCTURE.md)** and the **[Dokku Deployment Quickstart](./DOKKU_QUICKSTART.md)**.

@@ -1,6 +1,6 @@
 # Home Server Infrastructure Documentation
 
-> **Last Updated:** February 2026  
+> **Last Updated:** March 2026
 > **Owner:** Lucas William Bateson  
 > **Base Domain:** `l3s.me`
 
@@ -8,16 +8,16 @@
 
 ## 📍 Hardware Overview
 
-| Component | Specification |
-|-----------|---------------|
-| **Device** | Mac Mini (Mac16,10) |
-| **Model Number** | MU9D3DH/A |
-| **Chip** | Apple M4 |
-| **CPU Cores** | 10 (4 performance + 6 efficiency) |
-| **Memory** | 16 GB |
-| **OS** | macOS |
-| **Location** | Home network |
-| **Remote Access** | Tailscale (100.94.15.7) |
+| Component         | Specification                     |
+| ----------------- | --------------------------------- |
+| **Device**        | Mac Mini (Mac16,10)               |
+| **Model Number**  | MU9D3DH/A                         |
+| **Chip**          | Apple M4                          |
+| **CPU Cores**     | 10 (4 performance + 6 efficiency) |
+| **Memory**        | 16 GB                             |
+| **OS**            | macOS                             |
+| **Location**      | Home network                      |
+| **Remote Access** | Tailscale (100.94.15.7)           |
 
 ---
 
@@ -34,33 +34,49 @@
 │                    (cloudflared container)                                   │
 │                                                                              │
 │  Domains:                                                                    │
-│  • foundry.l3s.me      → localhost:8081                                     │
-│  • status.l3s.me       → localhost:3001                                     │
-│  • notes.l3s.me        → localhost:80                                       │
-│  • l3s.me              → localhost:3000                                     │
-│  • portfolio.l3s.me    → localhost:3000                                     │
-│  • lucasbateson.com    → localhost:3000                                     │
-│  • budget.l3s.me       → localhost:3002                                     │
+│  • l3s.me              → localhost:8080 (Dokku NGINX)                       │
+│  • portfolio.l3s.me    → localhost:8080                                     │
+│  • lucasbateson.com    → localhost:8080                                     │
+│  • notes.l3s.me        → localhost:8080                                     │
+│  • budget.l3s.me       → localhost:8080                                     │
+│  • status.l3s.me       → localhost:8080                                     │
+│  • mini.l3s.me         → ssh://localhost:22                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           MAC MINI (M4)                                      │
-│                         Docker Desktop                                       │
 │                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      DOCKER CONTAINERS                               │   │
-│  │                                                                      │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
-│  │  │   Foundry    │  │ Uptime Kuma  │  │  Portfolio   │              │   │
-│  │  │   :8081      │  │    :3001     │  │    :3000     │              │   │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
-│  │                                                                      │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
-│  │  │     Blog     │  │    Budget    │  │   Registry   │              │   │
-│  │  │     :80      │  │    :3002     │  │    :5001     │              │   │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                     COLIMA VM (Ubuntu 24.04)                          │  │
+│  │              6 CPUs · 12 GB RAM · 80 GB Disk · aarch64               │  │
+│  │              macOS Virtualization.Framework                           │  │
+│  │                                                                       │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │                     DOCKER ENGINE                               │  │  │
+│  │  │                                                                 │  │  │
+│  │  │  ┌─────────────────────────────────────────────────────────┐   │  │  │
+│  │  │  │              DOKKU (0.37.7)                             │   │  │  │
+│  │  │  │         Privileged container + docker.sock              │   │  │  │
+│  │  │  │         Ports: 3022→22, 8080→80, 8443→443              │   │  │  │
+│  │  │  │         Volume: dokku-data → /mnt/dokku                │   │  │  │
+│  │  │  │                                                         │   │  │  │
+│  │  │  │    ┌───────────┐ ┌───────────┐ ┌───────────┐          │   │  │  │
+│  │  │  │    │ Portfolio  │ │   Blog    │ │  Budget   │          │   │  │  │
+│  │  │  │    │  :3000    │ │   :80     │ │  :3002    │          │   │  │  │
+│  │  │  │    └───────────┘ └───────────┘ └───────────┘          │   │  │  │
+│  │  │  │                                                         │   │  │  │
+│  │  │  │    ┌───────────┐ ┌───────────┐                        │   │  │  │
+│  │  │  │    │   Kuma    │ │ Postgres  │                        │   │  │  │
+│  │  │  │    │  :3001    │ │  :5432    │                        │   │  │  │
+│  │  │  │    └───────────┘ └───────────┘                        │   │  │  │
+│  │  │  └─────────────────────────────────────────────────────────┘   │  │  │
+│  │  │                                                                 │  │  │
+│  │  │  ┌───────────┐                                                 │  │  │
+│  │  │  │cloudflared│                                                 │  │  │
+│  │  │  └───────────┘                                                 │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -68,20 +84,22 @@
 
 ## 🔐 Authentication Architecture
 
-Authentication is handled on a per-app basis using **WorkOS**, replacing the legacy centralized Keycloak and OAuth2-Proxy gateway setup.
+Authentication is handled on a per-app basis using **WorkOS AuthKit**.
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         AUTHENTICATION FLOW                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-
   User Request
        │
        ▼
 ┌──────────────┐     ┌─────────────────────────────────────────────────┐
-│   Cloudflare │────▶│             Protected Service                   │
-│    Tunnel    │     │          (e.g., Foundry, n8n)                   │
-└──────────────┘     │                                                 │
+│   Cloudflare │────▶│             Dokku NGINX                         │
+│    Tunnel    │     │         (virtual host routing)                  │
+└──────────────┘     └──────────────┬──────────────────────────────────┘
+                                    │
+                                    ▼
+                     ┌─────────────────────────────────────────────────┐
+                     │             Protected Service                   │
+                     │           (e.g., Budget app)                    │
+                     │                                                 │
                      │  ┌──────────────┐       ┌─────────────────┐     │
                      │  │   App Auth   │──────▶│ WorkOS Identity │     │
                      │  │ (Middleware) │       │   Provider      │     │
@@ -89,182 +107,128 @@ Authentication is handled on a per-app basis using **WorkOS**, replacing the leg
                      └─────────────────────────────────────────────────┘
 ```
 
-### Authentication Components
-
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| **WorkOS** | Identity Provider / SSO | Replaced Keycloak for all per-app authentication needs. |
-| **Session Cookies** | Session Management | Secure, HTTP-only HS256 JWT cookies verified by the app. |
+| Component           | Purpose                                                 |
+| ------------------- | ------------------------------------------------------- |
+| **WorkOS**          | Identity Provider / SSO for per-app authentication      |
+| **Session Cookies** | Secure, HTTP-only HS256 JWT cookies verified by the app |
 
 ---
 
 ## 🔑 Secrets Management
 
-Secrets are injected and managed securely using **Proton Pass** (via `pass-cli`) and local environment templates, ensuring sensitive credentials are never hardcoded.
+Environment variables are set per-app via Dokku's config system:
 
-- **Host-side Injection**: Services like Foundry use a launchd watcher and `pass-cli` to inject credentials from Proton Pass dynamically.
-- **Environment Templates**: Repositories (such as `blog` and `portfolio`) utilize `secrets.env` configurations and templates for robust secret provisioning.
+```bash
+ssh dokku config:set <app> KEY=value
+```
+
+Sensitive values (API keys, database credentials) are stored in Dokku's config and injected at runtime. Database connection strings are managed automatically by the dokku-postgres plugin via linked services.
 
 ---
 
 ## 📦 Services Inventory
 
-### 1. Foundry (CI/CD Platform)
+### 1. Portfolio Website
 
-| Property | Value |
-|----------|-------|
-| **Domain** | `foundry.l3s.me` |
-| **Port** | 8081 |
-| **Repository** | `Lucas-William-Bateson/foundry` |
-| **Image** | Custom (Rust workspace + React 19/Vite) |
-| **Database** | PostgreSQL 16 (foundry_postgres_data) |
-
-**Components (3-crate Rust workspace):**
-- `foundry-core` - Shared types, config parsing (foundry.toml), GitHub webhook verification
-- `foundryd` - Axum HTTP server, PostgreSQL job queue, scheduler, auth, Cloudflare tunnel management
-- `foundry-agent` - Job runner that polls for work, clones repos, builds Docker images, executes jobs
-- `postgres` - Job and repo metadata storage (PostgreSQL 16, 6 migrations)
-- `cloudflared` - Cloudflare tunnel daemon
-
-**Frontend:**
-- React 19 + TypeScript + Vite + TailwindCSS 4 + Radix UI
-
-**API:**
-- REST API (Axum) with SSE for real-time log streaming
-
-**Functionality:**
-- GitHub webhook receiver with signature verification
-- Automatic deployments on push
-- Build job queuing with atomic claiming (`FOR UPDATE SKIP LOCKED`)
-- Multi-stage build pipelines (`[[stages]]` in foundry.toml)
-- Docker compose deployments with auto Cloudflare tunnel/DNS provisioning
-- Scheduled builds (cron-based)
-- Real-time build log streaming
-- Container management UI (start/stop/restart/logs)
-- GitHub App integration (check runs)
-- Self-deployment capability (agent detects pushes to own repo)
-- Volume mount support for deployments (with dangerous path blocking)
-- Env file support for compose deployments
-- **Auth**: WorkOS SSO with HS256 session cookies
-- **Secrets**: Proton Pass host-side secret injection via watcher
-
-**Connections:**
-- GitHub App (webhook + clone authentication)
-- Docker socket (for running container deployments)
-- Cloudflare API (tunnel management)
+| Property          | Value                                                                          |
+| ----------------- | ------------------------------------------------------------------------------ |
+| **Dokku App**     | `portfolio`                                                                    |
+| **Domains**       | `l3s.me`, `portfolio.l3s.me`, `lucasbateson.com`, `portfolio.lucasbateson.com` |
+| **Internal Port** | 3000                                                                           |
+| **Repository**    | `Lucas-William-Bateson/portfolio`                                              |
+| **Framework**     | Astro 4.x + Tailwind                                                           |
+| **Builder**       | Dockerfile (`docker/Dockerfile`)                                               |
+| **Runtime**       | `serve` (static site)                                                          |
 
 ---
 
-### 2. Uptime Kuma (Status Monitoring)
+### 2. Blog / Notes
 
-| Property | Value |
-|----------|-------|
-| **Domain** | `status.l3s.me` |
-| **Port** | 3001 |
-| **Repository** | `Lucas-William-Bateson/uptime-kuma` (fork) |
-| **Image** | `louislam/uptime-kuma:1` |
-| **Data Volume** | `uptime-kuma` |
-
-**Scheduled Rebuild:** Weekly on Monday at 01:00 UTC
-
----
-
-### 3. Portfolio Website
-
-| Property | Value |
-|----------|-------|
-| **Domains** | `l3s.me`, `portfolio.l3s.me`, `lucasbateson.com`, `portfolio.lucasbateson.com` |
-| **Port** | 3000 |
-| **Repository** | `Lucas-William-Bateson/portfolio` |
-| **Image** | Custom (Astro + Tailwind) |
-| **Framework** | Astro |
-
-**Scheduled Rebuild:** Daily at 05:00 UTC
-**Secrets:** Managed via `secrets.env` configuration
+| Property          | Value                            |
+| ----------------- | -------------------------------- |
+| **Dokku App**     | `blog`                           |
+| **Domain**        | `notes.l3s.me`                   |
+| **Internal Port** | 80                               |
+| **Repository**    | `Lucas-William-Bateson/blog`     |
+| **Framework**     | Astro 5.x + Tailwind + pnpm      |
+| **Builder**       | Dockerfile (`docker/Dockerfile`) |
+| **Runtime**       | nginx (static site)              |
 
 ---
 
-### 4. Blog / Notes
+### 3. Budget
 
-| Property | Value |
-|----------|-------|
-| **Domain** | `notes.l3s.me` |
-| **Port** | 80 |
-| **Repository** | `Lucas-William-Bateson/blog` |
-| **Image** | Custom (Astro) |
-| **Framework** | Astro |
-
-**Scheduled Rebuild:** Daily at 03:00 UTC
-**Secrets:** Managed via `secrets.env` configuration
-
----
-
-### 5. Docker Registry
-
-| Property | Value |
-|----------|-------|
-| **Port** | 5001 (internal) |
-| **Image** | `registry:2` |
-| **Data Volume** | `registry-data` |
+| Property          | Value                                                |
+| ----------------- | ---------------------------------------------------- |
+| **Dokku App**     | `budget`                                             |
+| **Domain**        | `budget.l3s.me`                                      |
+| **Internal Port** | 3002                                                 |
+| **Repository**    | `Lucas-William-Bateson/budget`                       |
+| **Framework**     | Next.js 16 + Prisma 7 + React 19 + Designsystemet    |
+| **Builder**       | Dockerfile (`docker/Dockerfile`)                     |
+| **Database**      | PostgreSQL 16 (dokku-postgres, service: `budget-db`) |
+| **Auth**          | WorkOS AuthKit                                       |
 
 ---
 
-### 6. Budget
+### 4. Uptime Kuma (Status Monitoring)
 
-| Property | Value |
-|----------|-------|
-| **Domain** | `budget.l3s.me` |
-| **Port** | 3002 |
-| **Repository** | `Lucas-William-Bateson/budget` |
-| **Image** | Custom (Next.js + Designsystemet) |
-| **Framework** | Next.js |
-
-**Description:** Created per instruction: "Create a new app (with git repo) with auth called budget, at the domain budget.l3s.me to work as a personal budgeting tool, both for long term management and month by month and week by week, use designsystemet: https://designsystemet.no/no/components".
-Auth is handled on a per-app basis via WorkOS.
+| Property          | Value                                                    |
+| ----------------- | -------------------------------------------------------- |
+| **Dokku App**     | `kuma`                                                   |
+| **Domain**        | `status.l3s.me`                                          |
+| **Internal Port** | 3001                                                     |
+| **Image**         | `louislam/uptime-kuma:1` (deployed via `git:from-image`) |
+| **Storage**       | `/var/lib/dokku/data/storage/kuma-data:/app/data`        |
 
 ---
 
 ## 🗄️ Database Overview
 
-| Database | Service | Port | Volume |
-|----------|---------|------|--------|
-| `foundry` | Foundry Server | 5432 | `foundry_postgres_data` |
+| Database    | Service | Plugin         | Image                |
+| ----------- | ------- | -------------- | -------------------- |
+| `budget-db` | Budget  | dokku-postgres | `postgres:16-alpine` |
 
-Database runs PostgreSQL 16 Alpine.
+Managed by the [dokku-postgres](https://github.com/dokku/dokku-postgres) plugin. Connection string is auto-injected as `DATABASE_URL` when linked to an app.
 
 ---
 
 ## 🔄 Deployment Pipeline
 
-### Automatic Deployments
+### Git Push Deployment
 
-All services are deployed automatically via Foundry when pushing to their respective repositories:
+All Dockerfile-based apps are deployed via `git push`:
 
 ```text
-GitHub Push → Webhook → Foundry Server → Agent Claims Job → Docker Build → Deploy
+Developer Machine → git push dokku main → Dokku builds Dockerfile → Deploy + NGINX routing
 ```
 
-### Foundry Configuration (foundry.toml)
+### Pre-built Image Deployment
 
-Each repository contains a `foundry.toml` that defines:
-- Build configuration (Dockerfile, context, timeout)
-- Trigger rules (branches, pull requests)
-- Deploy settings (name, domain, port, compose file)
-- Multi-stage pipeline definitions (`[[stages]]`)
-- Volume mount mappings (with dangerous path blocking)
-- Schedule (cron expression for periodic rebuilds)
-- Environment variables
+Apps using pre-built images (e.g., Uptime Kuma) are deployed via:
 
-### Container Management
+```bash
+ssh dokku git:from-image <app> <image>:<tag>
+```
 
-Running containers can be managed via the Foundry UI:
-- Start, stop, and restart containers
-- View real-time logs (via SSE streaming)
-- Monitor container status
+### Dokku SSH Access
 
-### Env Files Location
+From the dev machine, Dokku is accessed via SSH (configured in `~/.ssh/config`):
 
-Sensitive environment variables are securely stored or dynamically injected using templates, `secrets.env`, and `pass-cli`. Host-side configurations typically reside in `/Users/lucas/foundry/`.
+```
+Host dokku
+  HostName 100.94.15.7
+  Port 3022
+  User dokku
+  IdentityFile ~/.ssh/id_ed25519
+  RequestTTY no
+```
+
+Git remotes for each app:
+
+```bash
+git remote add dokku dokku@dokku:<app-name>
+```
 
 ---
 
@@ -272,41 +236,43 @@ Sensitive environment variables are securely stored or dynamically injected usin
 
 ### Primary Domain: `l3s.me`
 
-| Subdomain | Service | Port |
-|-----------|---------|------|
-| `l3s.me` | Portfolio | 3000 |
-| `portfolio.l3s.me` | Portfolio | 3000 |
-| `foundry.l3s.me` | Foundry | 8081 |
-| `status.l3s.me` | Uptime Kuma | 3001 |
-| `notes.l3s.me` | Blog | 80 |
-| `budget.l3s.me` | Budget | 3002 |
+| Subdomain          | Dokku App |
+| ------------------ | --------- |
+| `l3s.me`           | portfolio |
+| `portfolio.l3s.me` | portfolio |
+| `notes.l3s.me`     | blog      |
+| `budget.l3s.me`    | budget    |
+| `status.l3s.me`    | kuma      |
 
 ### Secondary Domain: `lucasbateson.com`
 
-| Subdomain | Service | Port |
-|-----------|---------|------|
-| `lucasbateson.com` | Portfolio | 3000 |
-| `portfolio.lucasbateson.com` | Portfolio | 3000 |
+| Subdomain                    | Dokku App |
+| ---------------------------- | --------- |
+| `lucasbateson.com`           | portfolio |
+| `portfolio.lucasbateson.com` | portfolio |
 
-All domains route through the Cloudflare Tunnel to the Mac Mini.
+All domains route through the Cloudflare Tunnel to Dokku's NGINX on port 8080, which routes to the correct app container based on the `Host` header.
 
----
+### SSH Access
 
-## 🐳 Docker Networks
-
-| Network | Purpose | Services |
-|---------|---------|----------|
-| `foundry_default` | Foundry stack | foundryd, agent, postgres, cloudflared |
+| Subdomain     | Target                                      |
+| ------------- | ------------------------------------------- |
+| `mini.l3s.me` | `ssh://localhost:22` (Cloudflare SSH proxy) |
 
 ---
 
-## 📊 Scheduled Builds
+## 🐳 Docker-in-Docker Volume Fix
 
-| Service | Schedule | Timezone | Branch |
-|---------|----------|----------|--------|
-| Blog | Daily 03:00 | UTC | main |
-| Portfolio | Daily 05:00 | UTC | main |
-| Uptime Kuma | Weekly Mon 01:00 | UTC | master |
+Dokku runs as a privileged container with Docker socket access, meaning its plugins (like dokku-postgres) create **sibling containers** on the host Docker engine. Volume paths referenced from inside the Dokku container don't map correctly to host paths.
+
+**Fix:** Set `DOKKU_LIB_HOST_ROOT` so the postgres plugin generates correct host-side volume mount paths:
+
+```bash
+# Inside the Dokku container:
+DOKKU_LIB_HOST_ROOT=/var/lib/docker/volumes/dokku-data/_data/var/lib/dokku
+```
+
+This is set in `/etc/default/dokku`, `/home/dokku/.bashrc`, `/home/dokku/.profile`, and `/etc/environment` inside the Dokku container.
 
 ---
 
@@ -318,28 +284,53 @@ All domains route through the Cloudflare Tunnel to the Mac Mini.
 # SSH to Mac Mini (via Tailscale)
 ssh lucas@100.94.15.7
 
-# Set Docker path
-export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH
+# List all Dokku apps
+ssh dokku apps:list
 
-# View all containers
-docker ps -a
+# View app status
+ssh dokku ps:report <app>
 
-# View logs for a service
-docker logs <container-name>
+# View app logs
+ssh dokku logs <app> --tail
 
-# Restart a service
-docker restart <container-name>
+# Restart an app
+ssh dokku ps:restart <app>
 
-# View Foundry jobs
-docker exec foundry-postgres-1 psql -U foundry -d foundry -c "SELECT id, status, created_at FROM job ORDER BY created_at DESC LIMIT 10;"
+# Set environment variables
+ssh dokku config:set <app> KEY=value
+
+# View app domains
+ssh dokku domains:report <app>
+
+# View all containers on the server
+ssh lucas@100.94.15.7 docker ps -a
+
+# Enter the Dokku container
+ssh lucas@100.94.15.7 docker exec -it dokku bash
+
+# Postgres management
+ssh dokku postgres:info budget-db
+ssh dokku postgres:connect budget-db
+```
+
+### Deploy an App
+
+```bash
+# Dockerfile-based apps
+cd ~/Github/<repo>
+git remote add dokku dokku@dokku:<app-name>  # one-time setup
+git push dokku main
+
+# Pre-built image apps
+ssh dokku git:from-image <app> <image>:<tag>
 ```
 
 ### Backup Locations
 
-| Data | Location |
-|------|----------|
-| Foundry DB | `foundry_postgres_data` volume |
-| Uptime Kuma | `uptime-kuma` volume |
-| Docker Registry | `registry-data` volume |
+| Data                 | Location                                                         |
+| -------------------- | ---------------------------------------------------------------- |
+| Dokku app data       | `dokku-data` Docker volume                                       |
+| Kuma monitoring data | `/var/lib/dokku/data/storage/kuma-data` (inside Dokku container) |
+| Budget PostgreSQL    | Managed by dokku-postgres (`budget-db` service)                  |
 
 ---
